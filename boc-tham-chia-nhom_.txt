@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bốc thăm chia nhóm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2430;
+    --ink-2:#232F3D;
+    --ink-3:#2C3A4B;
+    --paper:#F3EEDD;
+    --paper-2:#E9E0C4;
+    --gold:#C89B3C;
+    --gold-deep:#9C7526;
+    --rust:#B1502F;
+    --pine:#3F5D50;
+    --text-light:#EDE6D3;
+    --text-muted:#9C9683;
+    --charcoal:#2A2620;
+    --charcoal-soft:#5A5340;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--text-light);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 64px;}
+  header{margin-bottom:32px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:clamp(28px,4vw,42px);
+    margin:0 0 8px;
+    color:var(--text-light);
+  }
+  .lede{color:var(--text-muted);font-size:15px;max-width:560px;line-height:1.6;margin:0;}
+
+  .layout{display:grid;grid-template-columns:340px 1fr;gap:28px;align-items:start;}
+  @media (max-width:820px){.layout{grid-template-columns:1fr;}}
+
+  .panel{
+    background:var(--ink-2);
+    border:1px solid var(--ink-3);
+    border-radius:14px;
+    padding:22px;
+  }
+  .field{margin-bottom:18px;}
+  .field label{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:12.5px;font-weight:500;color:var(--text-muted);
+    margin-bottom:7px;letter-spacing:.02em;
+  }
+  .field label span.count{font-family:'IBM Plex Mono',monospace;color:var(--gold);font-size:11px;}
+  textarea, input[type=number]{
+    width:100%;
+    background:var(--ink);
+    border:1px solid var(--ink-3);
+    border-radius:8px;
+    color:var(--text-light);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:13.5px;
+    padding:10px 12px;
+    resize:vertical;
+  }
+  textarea{min-height:112px;line-height:1.6;}
+  textarea:focus, input:focus{outline:none;border-color:var(--gold);}
+  input[type=number]{width:100px;}
+
+  .row-inline{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;}
+
+  .draw-btn{
+    width:100%;
+    background:var(--gold);
+    color:var(--charcoal);
+    border:none;
+    border-radius:8px;
+    padding:13px 16px;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:13.5px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    cursor:pointer;
+    margin-top:6px;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .draw-btn:hover{background:#DBAE4E;}
+  .draw-btn:active{transform:scale(.98);}
+  .draw-btn.ghost{
+    background:transparent;
+    border:1px solid var(--ink-3);
+    color:var(--text-light);
+  }
+  .draw-btn.ghost:hover{border-color:var(--gold);color:var(--gold);}
+
+  .note{
+    font-size:12px;color:var(--text-muted);line-height:1.6;margin-top:14px;
+    border-top:1px solid var(--ink-3);padding-top:14px;
+  }
+  .warn{
+    background:rgba(177,80,47,0.18);
+    border:1px solid rgba(177,80,47,0.5);
+    color:#E8B49B;
+    font-size:12.5px;
+    border-radius:8px;
+    padding:9px 12px;
+    margin-top:12px;
+    line-height:1.55;
+  }
+
+  .results-head{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:16px;flex-wrap:wrap;gap:10px;
+  }
+  .summary{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-muted);}
+  .summary b{color:var(--gold);}
+
+  .empty-state{
+    border:1px dashed var(--ink-3);
+    border-radius:14px;
+    padding:64px 24px;
+    text-align:center;
+    color:var(--text-muted);
+  }
+  .empty-state .glyph{font-family:'Fraunces',serif;font-size:34px;color:var(--gold);margin-bottom:10px;}
+
+  .ticket-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(240px,1fr));
+    gap:20px;
+  }
+  .ticket{
+    position:relative;
+    background:var(--paper);
+    border-radius:12px;
+    color:var(--charcoal);
+    overflow:hidden;
+    opacity:0;
+    transform:translateY(6px);
+    animation:rise .45s ease forwards;
+  }
+  .ticket .stub{
+    background:var(--paper-2);
+    padding:14px 18px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .ticket .serial{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;color:var(--charcoal-soft);letter-spacing:.06em;
+  }
+  .ticket .grpnum{
+    font-family:'Fraunces',serif;font-weight:600;font-size:24px;color:var(--charcoal);
+  }
+  .perforation{
+    position:relative;
+    height:0;
+    border-top:2px dashed var(--charcoal-soft);
+    opacity:.35;
+    margin:0 16px;
+  }
+  .perforation::before,.perforation::after{
+    content:'';
+    position:absolute;top:-8px;
+    width:16px;height:16px;border-radius:50%;
+    background:var(--ink);
+  }
+  .perforation::before{left:-24px;}
+  .perforation::after{right:-24px;}
+
+  .ticket .body{padding:16px 18px 18px;}
+  .ticket .body h3{
+    margin:0 0 10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--charcoal-soft);
+  }
+  .ticket ul{list-style:none;margin:0 0 14px;padding:0;}
+  .ticket li{
+    font-size:14px;padding:3px 0;
+    border-bottom:1px solid rgba(42,38,32,0.08);
+  }
+  .ticket li:last-child{border-bottom:none;}
+
+  .stamp{
+    display:inline-block;
+    border:1.5px solid var(--rust);
+    color:var(--rust);
+    border-radius:6px;
+    padding:7px 10px;
+    font-size:12.5px;
+    font-weight:500;
+    transform:rotate(-2.5deg);
+    line-height:1.4;
+  }
+  .stamp b{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px;opacity:.85;}
+
+  @keyframes rise{to{opacity:1;transform:translateY(0);}}
+
+  .toolbar-actions{display:flex;gap:10px;}
+  .icon-btn{
+    background:transparent;border:1px solid var(--ink-3);color:var(--text-muted);
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+    padding:7px 11px;border-radius:7px;cursor:pointer;
+  }
+  .icon-btn:hover{border-color:var(--gold);color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Vé bốc thăm &mdash; số 01</p>
+    <h1>Bốc thăm chia nhóm</h1>
+    <p class="lede">Xáo trộn danh sách một cách ngẫu nhiên, chia đều số lượng vào từng nhóm, rồi bốc thăm đề tài &mdash; không ai can thiệp được kết quả.</p>
+  </header>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="field">
+        <label>Danh sách thành viên <span class="count" id="stuCount">0 người</span></label>
+        <textarea id="students" placeholder="Mỗi tên một dòng">Nguyễn An
+Trần Bảo
+Lê Chi
+Phạm Duy
+Hoàng Giang
+Vũ Hà
+Đặng Khoa
+Bùi Linh
+Ngô Minh
+Đỗ Nam
+Phan Oanh
+Trịnh Phúc
+Lý Quân
+Dương Sơn
+Đinh Thảo
+Mai Tuấn</textarea>
+      </div>
+
+      <div class="row-inline">
+        <div class="field" style="margin-bottom:0;">
+          <label>Số nhóm</label>
+          <input type="number" id="groupCount" min="2" value="4">
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:18px;">
+        <label>Danh sách đề tài <span class="count" id="topicCount">0 đề tài</span></label>
+        <textarea id="topics" placeholder="Mỗi đề tài một dòng (có thể để trống)">Ứng dụng AI trong học tập
+Thương mại điện tử bền vững
+Chuyển đổi số doanh nghiệp nhỏ
+An toàn thông tin cá nhân
+Kinh tế chia sẻ tại Việt Nam
+Tự động hoá quy trình văn phòng</textarea>
+      </div>
+
+      <button class="draw-btn" id="drawBtn">Bốc thăm ngay</button>
+      <button class="draw-btn ghost" id="redrawBtn" style="display:none;">Bốc thăm lại</button>
+
+      <div class="warn" id="warnBox" style="display:none;"></div>
+
+      <p class="note">Cách chia: xáo trộn ngẫu nhiên toàn bộ danh sách, sau đó phân đều lần lượt vào từng nhóm để số lượng thành viên chênh lệch tối đa 1 người &mdash; không nhóm nào bị ưu ái hay thiệt thòi.</p>
+    </div>
+
+    <div>
+      <div class="results-head">
+        <div class="summary" id="summaryLine"></div>
+        <div class="toolbar-actions" id="toolbar" style="display:none;">
+          <button class="icon-btn" id="copyBtn">Sao chép kết quả</button>
+          <button class="icon-btn" id="downloadBtn">Tải file .txt</button>
+        </div>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="glyph">☙</div>
+        Nhập danh sách bên trái rồi bấm &ldquo;Bốc thăm ngay&rdquo; để chia nhóm.
+      </div>
+
+      <div class="ticket-grid" id="ticketGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const studentsEl = document.getElementById('students');
+const topicsEl = document.getElementById('topics');
+const groupCountEl = document.getElementById('groupCount');
+const drawBtn = document.getElementById('drawBtn');
+const redrawBtn = document.getElementById('redrawBtn');
+const warnBox = document.getElementById('warnBox');
+const emptyState = document.getElementById('emptyState');
+const ticketGrid = document.getElementById('ticketGrid');
+const summaryLine = document.getElementById('summaryLine');
+const toolbar = document.getElementById('toolbar');
+const stuCount = document.getElementById('stuCount');
+const topicCount = document.getElementById('topicCount');
+
+let lastResult = null;
+
+function parseLines(text){
+  return text.split('\n').map(s => s.trim()).filter(Boolean);
+}
+
+function updateCounts(){
+  stuCount.textContent = parseLines(studentsEl.value).length + ' người';
+  topicCount.textContent = parseLines(topicsEl.value).length + ' đề tài';
+}
+studentsEl.addEventListener('input', updateCounts);
+topicsEl.addEventListener('input', updateCounts);
+updateCounts();
+
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function showWarn(msg){
+  if (!msg){ warnBox.style.display = 'none'; warnBox.textContent = ''; return; }
+  warnBox.style.display = 'block';
+  warnBox.textContent = msg;
+}
+
+function draw(){
+  const students = parseLines(studentsEl.value);
+  const topicsRaw = parseLines(topicsEl.value);
+  const n = parseInt(groupCountEl.value, 10);
+
+  if (students.length < 2){
+    showWarn('Cần ít nhất 2 thành viên để chia nhóm.');
+    return;
+  }
+  if (!n || n < 2){
+    showWarn('Số nhóm phải là số nguyên từ 2 trở lên.');
+    return;
+  }
+  if (n > students.length){
+    showWarn('Số nhóm không thể nhiều hơn số thành viên.');
+    return;
+  }
+  showWarn('');
+
+  const shuffledStudents = shuffle(students);
+  const groups = Array.from({length:n}, () => []);
+  shuffledStudents.forEach((name, i) => groups[i % n].push(name));
+
+  let topicAssignment = [];
+  let topicNote = '';
+  if (topicsRaw.length > 0){
+    const shuffledTopics = shuffle(topicsRaw);
+    if (shuffledTopics.length < n){
+      topicNote = 'Số đề tài (' + shuffledTopics.length + ') ít hơn số nhóm (' + n + ') nên một vài đề tài sẽ lặp lại.';
+    }
+    for (let i = 0; i < n; i++){
+      topicAssignment.push(shuffledTopics[i % shuffledTopics.length]);
+    }
+    if (topicNote) showWarn(topicNote);
+  }
+
+  lastResult = { groups, topicAssignment, ts: new Date() };
+  render(lastResult);
+}
+
+function render(result){
+  const { groups, topicAssignment } = result;
+  emptyState.style.display = 'none';
+  toolbar.style.display = 'flex';
+  ticketGrid.innerHTML = '';
+
+  const totalPeople = groups.reduce((s,g) => s + g.length, 0);
+  summaryLine.innerHTML = 'Đã chia <b>' + totalPeople + '</b> người vào <b>' + groups.length + '</b> nhóm';
+
+  groups.forEach((members, idx) => {
+    const num = String(idx + 1).padStart(2, '0');
+    const topic = topicAssignment[idx];
+    const card = document.createElement('div');
+    card.className = 'ticket';
+    card.style.animationDelay = (idx * 0.05) + 's';
+    card.innerHTML =
+      '<div class="stub">' +
+        '<span class="grpnum">Nhóm ' + num + '</span>' +
+        '<span class="serial">#' + (Math.random().toString(36).slice(2,7).toUpperCase()) + '</span>' +
+      '</div>' +
+      '<div class="perforation"></div>' +
+      '<div class="body">' +
+        '<h3>Thành viên (' + members.length + ')</h3>' +
+        '<ul>' + members.map(m => '<li>' + escapeHtml(m) + '</li>').join('') + '</ul>' +
+        (topic ? '<div class="stamp"><b>Đề tài bốc được</b>' + escapeHtml(topic) + '</div>' : '') +
+      '</div>';
+    ticketGrid.appendChild(card);
+  });
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function resultAsText(){
+  if (!lastResult) return '';
+  const lines = ['KẾT QUẢ BỐC THĂM CHIA NHÓM', '===================================', ''];
+  lastResult.groups.forEach((members, idx) => {
+    lines.push('Nhóm ' + (idx + 1) + ' (' + members.length + ' người)');
+    members.forEach(m => lines.push('  - ' + m));
+    if (lastResult.topicAssignment[idx]) lines.push('  Đề tài: ' + lastResult.topicAssignment[idx]);
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+drawBtn.addEventListener('click', () => {
+  draw();
+  drawBtn.style.display = 'none';
+  redrawBtn.style.display = 'block';
+});
+redrawBtn.addEventListener('click', draw);
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText(resultAsText()).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const old = btn.textContent;
+    btn.textContent = 'Đã sao chép';
+    setTimeout(() => btn.textContent = old, 1400);
+  });
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const blob = new Blob([resultAsText()], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ket-qua-chia-nhom.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>
